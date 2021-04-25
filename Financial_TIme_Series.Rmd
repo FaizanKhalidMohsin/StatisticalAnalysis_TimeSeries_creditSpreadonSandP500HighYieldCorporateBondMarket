@@ -1,0 +1,167 @@
+---
+title: "Financial Time Series"
+author: "Faizan Khalid Mohsin"
+date: "November 20, 2019"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+The subject is to analyse and model the dynamic  in the evolution of credit spread on S&P 500 high yield corporate bond market.
+
+•	Introduction, (Already done)
+•	Data, statistics (mean, kurtosiss, skewness, so on) and Differents tests ( Normality, Autocorrélation structuire, cointegration analysis, asymmetric analysis, so on) ( I have started but Not finish). Please change the variable credit spread. I have just done the difference but in the article the did difference but in continue time ( You will see) how they compute the credit spread. Et after rerun it.
+•	Modeling (Using many ARCH, GARCH model, GARCH-M model, so on according to the article coooool ) and compare and choose the best.
+•	Out of sample test
+•	Conclusion
+NB : - Coooooooool is the article to replicate a part.
+        - The word paper is what I have done until now ( but in french).
+        - The word code is the code R programming. You can copy and paste in your R logiciel.
+
+
+
+Please, tell me if it is possible and how much it costs and how many days can you complete it?
+
+
+
+
+```{r}
+#rm(list = ls())
+#Travail de session Finance 
+#Importation des données 
+
+base <- read.csv("base CSV.csv", header = TRUE, check.names = FALSE,sep=";", dec = ",")
+
+base <- base[-2497:-5323,]
+
+#Calucle des Spreads
+
+rr <-100*diff(log(base$SP500_HYB))
+rf <- 100*diff(log(base$SP_T_Bond))
+CS= rr-rf
+
+dCS= diff(CS)
+
+
+#Graphe des rendements et de la valeur absolue des rendements
+
+par(mfrow=c(3,2))
+
+plot(ts(rr[1:2496],frequency = 252, start = 2010), xlab="",ylab="", type = "l", col = "blue", main = "S&P500 HYB return")
+plot(ts(rf[1:2496],frequency = 252, start = 2010),xlab="",ylab="",type = "l", col = "red", main = "S&P Treasury Bond Return")
+plot(ts(CS[1:2496],frequency = 252, start = 2010), xlab="",ylab="", type = "l", col = "green", main = "Credit Spread")
+plot(ts(dCS[1:2496],frequency = 252, start = 2010), xlab="",ylab="", type = "l", col = "green", main = "variation du Credit Spread")
+
+
+#Fonction permettant de calculer les statistiques descriptives des rendements
+CS<-as.numeric(CS)
+fct <- function(y){
+  TT <- length(y)
+  mm <- mean(y)
+  vv <- sum((y-mm)^2)/TT
+  ss <- sqrt(vv)
+  z <- (y-mm)/sqrt(vv)
+  Sk <- mean(z^3)  
+  Ku <- mean(z^4)
+  min<- min(y)
+  max<-max(y)
+  return(list(mean=mm,variance=vv,Etype = ss, skewness=Sk,kurtosis=Ku, Minimum=min , Maximum=max ))
+}
+
+
+#Statistiques descriptives
+fct(CS)
+fct(dCS)
+
+# Test de normalité
+# Histogramme
+h <- hist(dCS, breaks=50, main="Histogram with Normal Curve", xlab="variation de Crédit Spread")
+
+
+xfit <-seq(min(dCS),max(dCS),length=40) 
+yfit<-dnorm(xfit,mean=mean(dCS),sd=sd(dCS)) 
+yfit <- yfit*diff(h$mids[1:2])*length(dCS) 
+lines(xfit, yfit, col="blue", lwd=2)
+
+
+
+
+#QQ norm et QQ plot 
+
+qqnorm(dCS); qqline(dCS)
+
+
+
+
+```
+
+
+```{r}
+
+
+#Test de Jacques Berra 
+library(tseries)
+jarque.bera.test(dCS)
+
+# Autocorrélation structure
+#figure()
+par(mfrow=c(2,2), mar=c(5,5,5,5))
+
+# max lags for autocorrelation of returns and returns squared
+mlag  <- 20
+
+t <- seq(length(CS))
+plot(t, y, type="l",
+     main="(a) CS",
+     xlab="t",
+     ylab=expression(y[t]),
+     bty="l")
+
+plot(t, y^2, type="l",
+     main="(b) dCS",
+     xlab="t",
+     ylab=expression(y[t]^2),
+     bty="l")
+
+acf(y, lag.max=mlag, plot=TRUE,
+    main="(c) ACF Credit Spread",
+    xlab="t",
+    ylab=expression(acf(y[t])),
+    bty="l")
+
+acf(y^2, lag.max=mlag, plot=TRUE,
+    main="(d) ACF dCS",
+    xlab="t",
+    ylab=expression(acf(y[t]^2)),
+    bty="l")
+
+
+figure()
+xi <- seq(-6, 6, 0.1)
+f <- bkde(y, range.x=c(-6, 6))
+ft <- dnorm(xi, 0, 1)
+
+plot(xi, ft, type="l", col="blue",
+     xlab="y",
+     lty=3,
+     ylab=expression(f(y)),
+     xlim = c(-6, 6),
+     ylim=c(0, 0.6),      
+     bty="l")
+lines(f, col="red")
+
+
+#Stationnarité du Credit Spread
+#Cointégration
+
+
+
+
+```
+
